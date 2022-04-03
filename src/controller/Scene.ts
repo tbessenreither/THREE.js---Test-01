@@ -10,11 +10,10 @@ class Scene {
 	renderer = new THREE.WebGLRenderer();
 	controls = new OrbitControls( this.camera, this.renderer.domElement );
 	
-
 	frameTime = 100 / 60;
 
 	defaultSunPosition = 80;
-	sunDistance = 100;
+	sunDistance = 400;
 
 	objects = new ObjectStorage();
 
@@ -46,6 +45,7 @@ class Scene {
 			this.onGameTickDividerClocks[key] = new THREE.Clock();
 		}
 		
+		this.addSkybox();
 		this.addPlane();
 		this.addLighting();
 		this.addControls();
@@ -116,14 +116,44 @@ class Scene {
 		sunSphere.position.set(...this.calculateSunPosition(position).map(x => x * 1.1));
 	}
 
+	loadCubeTextures(baseFilename, fileType) {
+		const sides = ["rt", "lf", "up", "dn", "ft", "bk"];
+		
+		//const sides = ["bk", "ft", "up", "dn", "rt", "lf"];
+		const pathStrings = sides.map(side => {
+			return baseFilename+"_"+side+'.'+fileType;
+		});
+
+		let textures = [];
+		for (let id in pathStrings) {
+			let texture = new THREE.TextureLoader().load(pathStrings[id]);
+			textures.push(new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide }));
+		}
+		
+		return textures;
+
+	}
+
+	addSkybox() {
+
+		const skyboxTextures = this.loadCubeTextures('./textures/skybox/sky/Daylight_Box', 'bmp');
+
+		const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
+		const skybox = new THREE.Mesh(skyboxGeometry, skyboxTextures);
+
+		skybox.position.set(0, 0, 0);
+
+		this.add({skybox});
+	}
+
 	addPlane() {
-		const geometry = new THREE.PlaneGeometry( 10, 10, 320, 320 );
+		const geometry = new THREE.PlaneGeometry( 1000, 1000, 320, 320 );
 		const material = new THREE.MeshStandardMaterial( {color: 0x00ff00, side: THREE.DoubleSide} );
 		const plane = new THREE.Mesh( geometry, material );
 		plane.rotation.x = Math.PI / 2;
 
 		plane.receiveShadow = true;
-		plane.castShadow = true;
+		plane.castShadow = false;
 
 
 		this.add({plane});
@@ -140,11 +170,10 @@ class Scene {
 	}
 
 	addLighting() {
-		let sunSphereGeometry = new THREE.SphereGeometry( 5, 32, 32 );
+		let sunSphereGeometry = new THREE.SphereGeometry( 50, 32, 32 );
 		let sunMaterial = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 		let sunSphere = new THREE.Mesh( sunSphereGeometry, sunMaterial );
 		sunSphere.position.set(...this.calculateSunPosition(this.defaultSunPosition).map(x => x * 1.1));
-		this.add({sunSphere});
 
 		this.renderer.shadowMap.enabled = true;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
@@ -156,12 +185,14 @@ class Scene {
 		sunLight.shadow.mapSize.height = 512;
 		sunLight.shadow.camera.near = 0.5;
 		sunLight.shadow.camera.far = 500;
+	
+
+
+		const ambientLight = new THREE.AmbientLight( 0x404040, 0.4 ); // soft white light
+		this.add({sunSphere, sunLight, ambientLight});
+
 
 		
-		const helper = new THREE.CameraHelper( sunLight.shadow.camera );
-		
-		this.add({sunLight});
-
 		this.setSunPosition(this.defaultSunPosition);
 	}
 

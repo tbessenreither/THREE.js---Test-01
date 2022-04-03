@@ -17,9 +17,9 @@ import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
 	loader.setDRACOLoader( dracoLoader );
 	loader.load( 'models/house.glb', function ( gltf ) {
 
-		let scale = 0.3;
+		let scale = 1;
 		const house = gltf.scene;
-		house.position.set( 0, 0.3, 0 );
+		house.position.set( 0, 0.1, 0 );
 		house.scale.set(scale, scale, scale);
 		house.rotation.y = 1.8;
 
@@ -46,13 +46,12 @@ import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
 
 	let sunPosition = 30;
 
-
 	scene.onGameTickDivider[2].register((delta)=>{
 		
 		let increment = 20 * delta;
 
-		sunPosition = Math.max(0, sunPosition + increment) % 180;
-		//sunPosition = (sunPosition + increment) % 360;
+		//sunPosition = Math.max(0, sunPosition + increment) % 190;
+		sunPosition = (sunPosition + increment) % 360;
 		//console.log({sunPosition});
 		scene.setSunPosition(sunPosition);
 	});/** */
