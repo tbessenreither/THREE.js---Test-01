@@ -16,15 +16,16 @@ scene.time.onNewDay.register((day)=>{
 });
 
 scene.time.onNewHour.register((hour, day)=>{
-	console.log('Hour', hour, 'of day', day)
+	document.querySelector('#ui .time .day .value').innerHTML = day;
+	document.querySelector('#ui .time .hour .value').innerHTML = hour;
 });
 
 scene.time.onSunrise.register((hour, day)=>{
-	console.log('Sunrise Hour', hour, 'of day', day)
+	console.log('Sunrise Hour', hour, 'of day', day);
 });
 
 scene.time.onSunset.register((hour, day)=>{
-	console.log('Sunset Hour', hour, 'of day', day)
+	console.log('Sunset Hour', hour, 'of day', day);
 });
 
 

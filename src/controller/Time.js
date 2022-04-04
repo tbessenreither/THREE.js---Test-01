@@ -7,8 +7,8 @@ class Time {
 	scene = null;
 	currentHour = 0;
 
-	onNewDay = new Subscribers();
-	onNewHour = new Subscribers();
+	onNewDay = new Subscribers(true);
+	onNewHour = new Subscribers(true);
 	onSunrise = new Subscribers();
 	onSunset = new Subscribers();
 
@@ -44,6 +44,8 @@ class Time {
 
 	_init() {
 		this.checkHour();
+
+		this.newHourHandler();
 	}
 
 	addLighting() {
