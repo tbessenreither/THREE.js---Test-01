@@ -94,12 +94,12 @@ class Scene {
 		const shadowplaneMaterial = new THREE.MeshStandardMaterial( {color: 0x000000, side: THREE.DoubleSide} );
 		const shadowplane = new THREE.Mesh( planeGeometry, shadowplaneMaterial );
 		shadowplane.rotation.x = Math.PI / 2;
-		shadowplane.position.y = -0.1;
+		shadowplane.position.y = -0.5;
 
 		shadowplane.receiveShadow = false;
 		shadowplane.castShadow = true;
 
-		this.add({plane, shadowplane});
+		this.add({plane});
 	}
 
 

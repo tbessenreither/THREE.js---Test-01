@@ -43,7 +43,5 @@ jobs:
         # Source folder
         src: /dist
         # optional, default is Destination folder
-        dest: ${{ secrets.FTP_DIR }}# optional, default is /
-        # For debug
-        dryRun: true 
-        # optional
+        dest: ${{ secrets.FTP_DIR }}
+        # optional, default is /

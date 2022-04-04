@@ -12,7 +12,7 @@ class Time {
 	onSunrise = new Subscribers();
 	onSunset = new Subscribers();
 
-	defaultSunPosition = 180;
+	defaultSunPosition = 0;
 	sunRadius = 20;
 	sunDistance = 450;
 	sunSphereDistance = 450;
@@ -28,7 +28,6 @@ class Time {
 		6: 1,
 		8: 5,
 		16: 1,
-		19: 5,
 		20: 5,
 	};
 	currentTimeIncrement = 1;

@@ -1,7 +1,7 @@
 import "./style.scss";
 
 import * as THREE from 'three';
-import Scene from './controller/Scene.ts';
+import Scene from './controller/Scene.js';
 import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
 
@@ -67,7 +67,7 @@ cube.position.set( 0, 2, 5);
 cube.castShadow = true;
 cube.receiveShadow = true;
 
-scene.add({cube});
+//scene.add({cube});
 
 
 
