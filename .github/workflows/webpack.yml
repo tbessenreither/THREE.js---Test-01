@@ -26,22 +26,31 @@ jobs:
       run: |
         npm install
         npx webpack
-        
-    - name: FTP Uploader
+    
+    - name: FTP Deployer
       # You may pin to the exact commit or the version.
-      # uses: zinh/ftp-uploader-action@10d256274547c8b84848edf454bfeb0b8a451c41
-      uses: zinh/ftp-uploader-action@v0.4
+      # uses: sand4rt/ftp-deployer@b4d8a88f104b46a1bcfac8f69b3413986cc0ce28
+      uses: sand4rt/ftp-deployer@v1.3
       with:
-        # Hostname of ftp server, eg: ftpHostname: ftp.test
-        ftpHostname: ${{ secrets.FTP_HOST }}
-        # User of ftp account
-        ftpUsername: ${{ secrets.FTP_USERNAME }}# optional, default is anonymous
-        # Password of ftp account
-        ftpPassword: ${{ secrets.FTP_PASSWORD }}# optional, default is 
-        # List files to upload to ftp server
-        files: 
-        # Source folder
-        src: /dist
-        # optional, default is Destination folder
-        dest: ${{ secrets.FTP_DIR }}
-        # optional, default is /
+        # SFTP on
+        sftp: false # optional
+        # FTP host URL like: ftp.host.com or sftp.host.com
+        host: ${{ secrets.FTP_HOST }}
+        # FTP port
+        port: 21# optional, default is 21
+        # Ftp username
+        username: ${{ secrets.FTP_USERNAME }}
+        # Ftp password
+        password: ${{ secrets.FTP_PASSWORD }}
+        # The remote folder location of your FTP server
+        remote_folder: ${{ secrets.FTP_DIR }} # optional
+        # The local folder location
+        local_folder: dist # optional, default is dist
+        # Remove existing files inside FTP remote folder
+        cleanup: true # optional
+        # includes
+        include: [] # optional
+        # exclude
+        exclude: [] # optional
+        # passive
+        pasive: true # optional
