@@ -41,8 +41,9 @@ jobs:
         # List files to upload to ftp server
         files: 
         # Source folder
-        src: /dist # optional, default is 
-        # Destination folder
+        src: /dist
+        # optional, default is Destination folder
         dest: ${{ secrets.FTP_DIR }}# optional, default is /
         # For debug
-        dryRun: true# optional
+        dryRun: true 
+        # optional
