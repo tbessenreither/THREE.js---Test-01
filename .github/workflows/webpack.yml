@@ -38,4 +38,3 @@ jobs:
         remote_folder: ${{ secrets.FTP_DIR }}
         local_folder: dist
         cleanup: true
-        pasive: true
