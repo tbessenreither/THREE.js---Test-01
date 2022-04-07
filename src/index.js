@@ -1,76 +1,66 @@
 import "./style.scss";
 
 import * as THREE from 'three';
+import { loadGlbAsync } from "./classes/helpers";
 import Scene from './controller/Scene.js';
-import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
+import PhysicsObject from './classes/PhysicsObject.js';
 
 
 let scene = new Scene();
 window.scene = scene;
 
-scene.time.globalTimeMultiplicator = 2;
+scene.time.timePassing = false;
+scene.time.setTime(12, 4);
 
-scene.time.onNewDay.register((day)=>{
-	console.log('a new day', day);
-});
 
 scene.time.onNewHour.register((hour, day)=>{
 	document.querySelector('#ui .time .day .value').innerHTML = day;
 	document.querySelector('#ui .time .hour .value').innerHTML = hour;
 });
 
-scene.time.onSunrise.register((hour, day)=>{
-	console.log('Sunrise Hour', hour, 'of day', day);
-});
 
-scene.time.onSunset.register((hour, day)=>{
-	console.log('Sunset Hour', hour, 'of day', day);
-});
+(async ()=>{
+	/*
+	let house = await loadGlbAsync('models/house.glb');
+	scene.add({house});/** */
 
 
 
-const loader = new GLTFLoader();
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath( 'js/libs/draco/gltf/' );
-loader.setDRACOLoader( dracoLoader );
-loader.load( 'models/house.glb', function ( gltf ) {
-
-	let scale = 1;
-	const house = gltf.scene;
-	house.position.set( 0, 0.3, 0 );
-	house.scale.set(scale, scale, scale);
-	house.rotation.y = 1.8;
-
-	gltf.scene.traverse( function( node ) {
-        if ( node.isMesh ) {
-			node.castShadow = true;
-		}
-    } );
+})();
 
 
-	scene.add({house});
-
-	//mixer = new THREE.AnimationMixer( model );
-	//mixer.clipAction( gltf.animations[ 0 ] ).play();
 
 
-}, undefined, function ( e ) {
 
-	console.error( e );
+let cubes = {};
 
-} );/** */
+for (let i = 0; i < 10; i++) {
+	
+	const cubeGeometry = new THREE.BoxGeometry();
+	const cubeMaterial = new THREE.MeshStandardMaterial( { color: 0x0fff00 } );
+	const cube = new PhysicsObject( cubeGeometry, cubeMaterial );
+	cube.position.set( 0+ (0.3*i), 10 + (5*i), 10 );
+	cube.castShadow = true;
+	cube.receiveShadow = false;
 
-const cubeGeometry = new THREE.BoxGeometry();
-const cubeMaterial = new THREE.MeshStandardMaterial( { color: 0x0ffff0, transparent: true } );
-const cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
-cube.position.set( 0, 2, 5);
-cube.castShadow = true;
-cube.receiveShadow = true;
+	cubes[`cube_${i}`] = cube;
+}
 
-//scene.add({cube});
+scene.add(cubes);
 
 
+
+setTimeout(()=>{
+	scene.remove('cube_2');
+}, 3000);
+
+setTimeout(()=>{
+	scene.remove('cube_3');
+}, 6000);
+
+setTimeout(()=>{
+	scene.remove('cube_4');
+}, 9000);
 
 /*
 scene.gameTick.onGameTickDivider[1].register((delta)=>{

@@ -38,14 +38,23 @@ class Time {
 
 	constructor(scene) {
 		this.scene = scene;
-
+		scene.addEventListener('onInit', this.onInit.bind(this));
 		this._init();
 	}
 
 	_init() {
 		this.checkHour();
-
 		this.newHourHandler();
+	}
+
+	setTime(hour, day) {
+		this.currentSunPosition = (hour * this.degreePerHour) - 90 % 360;
+		this.setSunPosition(this.currentSunPosition);
+		if (day !== undefined) this.passedDays = day;
+	}
+
+	onInit() {
+		this.setSunPosition(this.currentSunPosition);
 	}
 
 	addLighting() {
@@ -79,7 +88,7 @@ class Time {
 	}
 
 	checkHour() {
-		let hour = Math.round((this.currentSunPosition / this.degreePerHour) + 6.5) ;
+		let hour = Math.floor((this.currentSunPosition / this.degreePerHour) + 6.5) ;
 		if (hour >= 24) hour = hour % 24;
 
 		if (hour !== this.currentHour) {

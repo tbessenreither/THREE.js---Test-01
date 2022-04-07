@@ -37,8 +37,14 @@ class GameTick {
 	}
 
 	doGameTick() {
+		const delta1 = this.getFrameTimePercentageForClock(1);
+		this.scene.objects.call('onPreGameTick');
+		this.scene.objects.call('onGameTick', delta1);
+		this.scene.objects.call('onCalculateVelocity', delta1);
+		this.scene.objects.call('onCalculateCollisions', delta1);
+		this.scene.objects.call('onCalculatePosition', delta1);
 
-		this.onGameTickDivider[1].call(this.getFrameTimePercentageForClock(1));
+		this.onGameTickDivider[1].call(delta1);
 		if (this.currentGameTick % 2 === 0) {
 			this.onGameTickDivider[2].call(this.getFrameTimePercentageForClock(2));
 		}
