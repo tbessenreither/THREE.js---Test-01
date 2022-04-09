@@ -46,15 +46,13 @@ class GameTick {
 	}
 
 	analyticsTick() {
-		if (!this.scene.doLogging) return;
-
 		if (this.targetFrameTime < this.longestGameTick) {
-			console.log('GameTick took ' + this.longestGameTick + 'ms, but should have taken ' + this.targetFrameTime + 'ms');
+			if (this.scene.doLogging) console.log('GameTick took ' + this.longestGameTick + 'ms, but should have taken ' + this.targetFrameTime + 'ms');
 		}
 
 		this.statistics.longestGameTick = this.longestGameTick;
 
-		if (Object.keys(this.statistics).length > 0) console.table(this.statistics);
+		if (this.scene.doLogging && Object.keys(this.statistics).length > 0) console.table(this.statistics);
 
 		this.lastLongestGameTick = this.longestGameTick;
 		this.longestGameTick = 0;

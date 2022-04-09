@@ -39,9 +39,14 @@ document.querySelector('#ui .launch').addEventListener('click', ()=>{
 document.querySelector('#ui .tick').addEventListener('click', ()=>{
 	scene.gameTick.performGameTick();
 });
-document.querySelector('#ui .spawn').addEventListener('click', ()=>{
-	spawnCubes(50)
-});
+const spawnButtons = document.querySelectorAll('#ui .spawn');
+
+for (let spawnButton of spawnButtons) {
+	spawnButton.addEventListener('click', (e)=>{
+		let cubeCount = parseInt(e.target.value);
+		spawnCubes(cubeCount)
+	});
+}
 
 (async ()=>{
 	/*
@@ -56,10 +61,6 @@ document.querySelector('#ui .spawn').addEventListener('click', ()=>{
 
 scene.add(directionCubes(5, 5, 0));
 
-
-
-
-  
 
 
 

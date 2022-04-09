@@ -50,6 +50,10 @@ export default class Physics {
 	movableObjects = {};
 	colidableObjects = {};
 
+	checkedIntercections = {};
+
+	asArray = {};
+
 	constructor(scene) {
 		this.scene = scene;
 
@@ -96,47 +100,58 @@ export default class Physics {
 	}
 	
 	tick(delta) {
+		this.asArray.movable = Object.values(this.movableObjects);
+		this.asArray.colidable = Object.values(this.colidableObjects);
+
 		this.calculateVelocities(delta);
 		this.handleCollisions();
 		this.moveObjects(delta);
 	}
 
 	calculateVelocities(delta) {
-		Object.values(this.movableObjects).forEach((object) => {
-			object.velocity.add(this.gravityVector.clone().multiplyScalar(delta));
-		});
+		let gravityDelta = this.gravityVector.clone().multiplyScalar(delta);
+		for (let object1 of this.asArray.movable) {
+			object1.velocity.add(gravityDelta);
+		};
 	}
 
 	handleCollisions() {
-		Object.values(this.movableObjects).forEach((object1) => {
-			Object.values(this.colidableObjects).forEach((object2) => {
-				this.doIntercectionCalculations(object1, object2);
-			});
-		});
+		this.checkedIntercections = {};
+		let generatedBoundingBoxes = {};
+		for (let object1 of this.asArray.movable) {
+			if (!generatedBoundingBoxes[object1.uuid]) {
+				object1.updateMatrixWorld();
+				object1.translatedBoundingBox = object1.geometry.boundingBox.clone().applyMatrix4(object1.matrixWorld);
+				generatedBoundingBoxes[object1.uuid] = true;
+			}
 
-		Object.values(this.movableObjects).forEach((object1) => {
-			this.doCollisionCalculations(object1, Object.values(this.colidableObjects));
-		});
+			for (let object2 of this.asArray.colidable) {
+				if (!generatedBoundingBoxes[object2.uuid]) {
+					object2.updateMatrixWorld();
+					object2.translatedBoundingBox = object2.geometry.boundingBox.clone().applyMatrix4(object2.matrixWorld);
+					generatedBoundingBoxes[object2.uuid] = true;
+				}
+				
+				this.doIntercectionCalculations(object1, object2);
+			};
+		};
+
+		for (let object1 of this.asArray.movable) {
+			this.doCollisionCalculations(object1, this.asArray.colidable);
+		};
 	}
 
 	doIntercectionCalculations(object1, object2) {
 		try {
-			if (object1 === object2) return;
+			if (object1.uuid === object2.uuid) return;
 
 			if (object1.geometry.boundingSphere.intersectsSphere(object2.geometry.boundingSphere)) {
 				//cheap intersection detection finished, now check for real collision
-
-				object1.updateMatrixWorld();
-				let object1BoundingBox = object1.geometry.boundingBox.clone().applyMatrix4(object1.matrixWorld);
-
-				object2.updateMatrixWorld();
-				let object2BoundingBox = object2.geometry.boundingBox.clone().applyMatrix4(object2.matrixWorld);
-
-				if (object1BoundingBox.intersectsBox(object2BoundingBox)) {
+				if (object1.translatedBoundingBox.intersectsBox(object2.translatedBoundingBox)) {
 					// intersection detected
 					const collisionVector = object1.position.clone().sub(object2.position).normalize();
 
-					const split = 0.01;
+					const split = 0.02;
 
 					object1.addVelocity(collisionVector.clone().multiplyScalar(1 * split));
 					if (object2.isMovable()) object2.addVelocity(collisionVector.clone().multiplyScalar(-1 * split));
@@ -149,41 +164,38 @@ export default class Physics {
 	
 	doCollisionCalculations(source, objects) {
 		try {
-			source.updateMatrixWorld();
-			let sourceBoundingBox = source.geometry.boundingBox.clone().applyMatrix4(source.matrixWorld);
-
 			let pointsToCheck = {
 				topBackLeft: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.min.x, sourceBoundingBox.max.y, sourceBoundingBox.min.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.min.x, source.translatedBoundingBox.max.y, source.translatedBoundingBox.min.z),
 				},
 				topBackRight: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.max.x, sourceBoundingBox.max.y, sourceBoundingBox.min.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.max.x, source.translatedBoundingBox.max.y, source.translatedBoundingBox.min.z),
 				},
 				topFrontLeft: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.min.x, sourceBoundingBox.max.y, sourceBoundingBox.max.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.min.x, source.translatedBoundingBox.max.y, source.translatedBoundingBox.max.z),
 				},
 				topFrontRight: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.max.x, sourceBoundingBox.max.y, sourceBoundingBox.max.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.max.x, source.translatedBoundingBox.max.y, source.translatedBoundingBox.max.z),
 				},
 				bottomBackLeft: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.min.x, sourceBoundingBox.min.y, sourceBoundingBox.min.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.min.x, source.translatedBoundingBox.min.y, source.translatedBoundingBox.min.z),
 				},
 				bottomBackRight: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.max.x, sourceBoundingBox.min.y, sourceBoundingBox.min.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.max.x, source.translatedBoundingBox.min.y, source.translatedBoundingBox.min.z),
 				},
 				bottomFrontLeft: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.min.x, sourceBoundingBox.min.y, sourceBoundingBox.max.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.min.x, source.translatedBoundingBox.min.y, source.translatedBoundingBox.max.z),
 				},
 				bottomFrontRight: {
 					check: false,
-					point: new THREE.Vector3(sourceBoundingBox.max.x, sourceBoundingBox.min.y, sourceBoundingBox.max.z),
+					point: new THREE.Vector3(source.translatedBoundingBox.max.x, source.translatedBoundingBox.min.y, source.translatedBoundingBox.max.z),
 				},
 			};
 
@@ -226,11 +238,12 @@ export default class Physics {
 			for (let key in pointsToCheck) {
 				let check = pointsToCheck[key];
 				if (!check.check) continue;
-				
-				const ray = new THREE.Raycaster(check.point, source.velocity, 0, source.velocity.length());
+
+				const ray = new THREE.Raycaster(check.point, source.velocity.clone().normalize(), 0, source.velocity.length());
 				const intersects = ray.intersectObjects(objects);
+				//console.log('checking', {key, point: check.point, direction: source.velocity.clone().normalize(), near: 0, far: source.velocity.length()});
 				for (let intersection of intersects) {
-					if (intersection.object === source) continue;
+					if (intersection.object.uuid === source.uuid) continue;
 					if (shortestVector === null || intersection.distance < shortestVector.distance) {
 						shortestVector = intersection;
 					}
@@ -243,8 +256,8 @@ export default class Physics {
 				const totalDamping = source.properties.damping * shortestVector.object.properties.damping;
 
 				const distanceCorrection = shortestVector.distance / source.velocity.length();
-				source.velocity.multiplyScalar(distanceCorrection).add(source.velocity.clone().multiplyScalar(-0.5));
-				const newCollisionForce = source.velocity.clone().multiplyScalar(-1).multiplyScalar(1+(1-totalDamping));
+				source.velocity.multiplyScalar(distanceCorrection).multiplyScalar(shortestVector.distance * 0.5);
+				const newCollisionForce = source.velocity.clone().multiplyScalar(-1 * totalDamping);
 				
 
 				//calculate relations between forces
@@ -262,19 +275,19 @@ export default class Physics {
 	}
 
 	moveObjects(delta) {
-		Object.values(this.movableObjects).forEach((object) => {
+		for (let object of this.asArray.movable) {
 
 			if (Math.abs(object.velocity.x) < this.minVelocity) object.velocity.x = 0;
 			if (Math.abs(object.velocity.y) < this.minVelocity) object.velocity.y = 0;
 			if (Math.abs(object.velocity.z) < this.minVelocity) object.velocity.z = 0;
 
 			object.position.add(object.velocity.clone());
-			
+
 			object.velocity.add(object.colissionForce);
 			object.colissionForce.set(0,0,0);
 
 			if (object.properties.renderBoundingBox) object.boundingBox.update();
-		});
+		};
 	}
 
 
