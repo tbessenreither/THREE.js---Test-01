@@ -24,9 +24,12 @@ class ObjectStorage {
 		object.properties.id = uniqueObjectId;
 		object.properties.key = key;
 		if (object.name === "") object.name = key;
+
+		if (object.properties.pointable === undefined) object.properties.pointable = false;
 		if (object.properties.clickable === undefined) {
 			object.properties.clickable = false;
 		} else {
+			object.properties.pointable = true;
 			object.properties.clickable = object.properties.clickable.bind(object);
 		}
 

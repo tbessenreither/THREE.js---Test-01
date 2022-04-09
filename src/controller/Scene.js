@@ -8,6 +8,7 @@ import Time from './Time';
 import Sky from './Sky';
 import GameTick from './Gametick';
 import Physics from './Physics';
+import Labels from './Labels';
 
 class Scene {
 	doLogging = false;
@@ -20,11 +21,11 @@ class Scene {
 	renderer = new THREE.WebGLRenderer();
 	controls = new OrbitControls( this.camera, this.renderer.domElement );
 
-
 	gameTick = null;
 	time = null;
 	sky = null;
 	physics = null;
+	labels = null;
 
 	//raycaster thing
 	raycaster = new THREE.Raycaster();
@@ -46,9 +47,32 @@ class Scene {
 			skyboxDiameter: 1000,
 		});
 		this.physics = new Physics(this);
+		this.labels = new Labels(this);
 
 		this._init();
+	}
 
+	_init() {
+		this.onWindowResize();
+		document.getElementById('stage').appendChild( this.renderer.domElement );
+
+		window.addEventListener( 'resize', this.onWindowResize.bind(this) )
+		window.addEventListener( 'pointermove', this.onPointerMove.bind(this) );
+		window.addEventListener( 'click', this.onClick.bind(this) );
+
+		this.addPlane();
+		this.addControls();
+
+		this.sky.addSkybox();
+		this.time.addLighting();
+
+		this.camera.position.x = 2;
+		this.camera.position.y = 4;
+		this.camera.position.z = 20;
+
+		this.animate = this.animate.bind(this);
+
+		this.triggerEvent('onInit');
 	}
 
 	addEventListener(event, callback) {
@@ -85,31 +109,6 @@ class Scene {
 		return true;
 	}
 
-	_init() {
-
-		this.onWindowResize();
-		document.getElementById('stage').appendChild( this.renderer.domElement );
-		window.addEventListener( 'resize', this.onWindowResize.bind(this) )
-		window.addEventListener( 'pointermove', this.onPointerMove.bind(this) );
-		window.addEventListener( 'click', this.onClick.bind(this) );
-
-		
-		
-		this.addPlane();
-		this.addControls();
-
-		this.sky.addSkybox();
-		this.time.addLighting();
-
-		this.camera.position.x = 2;
-		this.camera.position.y = 4;
-		this.camera.position.z = 20;
-
-		this.animate = this.animate.bind(this);
-
-		this.triggerEvent('onInit');
-	}
-
 	onWindowResize() {
 
 		const width = window.innerWidth - 20;
@@ -140,20 +139,26 @@ class Scene {
 
 		const intersects = this.raycaster.intersectObjects( this.scene.children );
 		
-		let pointableFound = false;
+		let pointableFound = null;
 		for (let intersection of intersects) {
 			try {
-				if (intersection.object.properties?.clickable && intersection.object.properties.clickable !== false) {
-					this.pointedObject = intersection.object;
-					pointableFound = true;
+				if (intersection.object.properties.pointable === true) {
+					pointableFound = intersection.object;
 					break;
 				}
 			} catch (e) {
 				console.error('intersecter error', e);
 			}
 		}
-		if (!pointableFound) {
-			this.pointedObject = null;
+		if (this.pointedObject !== pointableFound) {
+			if (this.pointedObject !== null) this.triggerEvent('pointingEnd', this.pointedObject);
+
+			if (pointableFound === null) {
+				this.pointedObject = null;
+			} else {
+				this.pointedObject = pointableFound;
+				this.triggerEvent('pointingStart', this.pointedObject);
+			}
 		}
 	}
 

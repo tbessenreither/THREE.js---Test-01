@@ -3,6 +3,9 @@ import "./style.scss";
 import * as THREE from 'three';
 import { loadGlbAsync } from "./classes/helpers";
 import Scene from './controller/Scene.js';
+import { colorMaterials } from './helpers/materials.js';
+import { directionCubes } from './helpers/objects.js';
+
 
 
 
@@ -14,10 +17,9 @@ scene.time.setTime(16, 4);
 scene.camera.position.z = 20;
 scene.camera.position.y = 5;
 scene.gameTick.doGameTick = true;
-scene.doLogging = true;
+scene.doLogging = false;
 
 window.manualTick = false;
-
 
 
 scene.time.onNewHour.register((hour, day)=>{
@@ -50,27 +52,20 @@ document.querySelector('#ui .tick').addEventListener('click', ()=>{
 
 
 
-
+scene.add(directionCubes(5, 5, 0));
 
 let cubes = {};
 
 
-const cubeGeometry = new THREE.BoxGeometry();
-const cubeMaterial = new THREE.MeshStandardMaterial( { color: 0xffff00 } );
+  
 
-const cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
-cube.position.set( 10, 50, 0 );
-cube.castShadow = false;
-cube.receiveShadow = false;
 
-//cubes[`cube_back_1`] = cube;
-
-let cubeCount = 200;
-let spread = 20;
+let cubeCount = 50;
+let spread = 10;
 for (let i = 0; i < cubeCount; i++) {
 	
-	const cubeGeometry = new THREE.SphereGeometry();
-	const cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
+	const cubeGeometry = new THREE.BoxGeometry();
+	const cube = new THREE.Mesh( cubeGeometry, colorMaterials.white );
 	cube.position.set( -spread / 2 + Math.random() * spread, 20 + Math.random() * 10, -spread / 2 + Math.random() * spread );
 	cube.castShadow = true;
 	cube.receiveShadow = true;
@@ -78,7 +73,10 @@ for (let i = 0; i < cubeCount; i++) {
 	cube.properties = {
 		clickable: function() {
 			console.log(this);
-			this.addVelocity(new THREE.Vector3(0, 2, 0));
+			this.addVelocity(new THREE.Vector3(0, 1, 0));
+		},
+		onPointStart: ()=> {
+			console.log('onPointStart', this.name);
 		},
 		movable: true,
 		colidable: true,
