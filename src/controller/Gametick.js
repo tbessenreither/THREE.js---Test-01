@@ -13,6 +13,7 @@ class GameTick {
 	onGameTickDividerClocks = {};
 	internalOnGameTickSubscriberId = null;
 
+	lastLongestGameTick = 0;
 	longestGameTick = 0;
 	statistics = {};
 
@@ -55,6 +56,7 @@ class GameTick {
 
 		if (Object.keys(this.statistics).length > 0) console.table(this.statistics);
 
+		this.lastLongestGameTick = this.longestGameTick;
 		this.longestGameTick = 0;
 		this.statistics = {};
 	}
