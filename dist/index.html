@@ -15,8 +15,8 @@
 		<div id="ui">
 			<div class="time">
 				<div class="frametime">Frametime: <span class="value"></span></div>
-				<div class="day">Tag: <span class="value"></span></div>
-				<div class="hour">Stunde: <span class="value"></span></div>
+				<div class="">Jahr: <span class="year"></span> Tag: <span class="day"></span> / <span class="clock"></span></div>
+				<div class="currentAcceleration">Time acceleration: <span class="value"></span></div>
 				<div class="cubes">Cubes: <span class="value"></span></div>
 			</div>
 			<div class="other">
@@ -26,7 +26,13 @@
 				<button class="tick">Tick</button>
 				<button class="launch">Launch</button><br>
 				<button class="spawn" value="1">Spawn 1 cube</button>
-				<button class="spawn" value="50">Spawn 50 cubes</button>
+				<button class="spawn" value="50">Spawn 50 cubes</button><br>
+				<div>Global time acceleration</div>
+				<button class="timeAcceleration" value="1">1</button>
+				<button class="timeAcceleration" value="60">60</button>
+				<button class="timeAcceleration" value="600">600</button>
+				<button class="timeAcceleration" value="6000">6000</button><br>
+				<button class="timeReset">Reset Time</button>
 			</div>
 		</div>
 		<div id="stage"></div>

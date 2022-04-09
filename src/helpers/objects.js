@@ -3,6 +3,18 @@ import * as THREE from 'three';
 import { colorMaterials } from "./materials";
 
 
+export function getCube(size, position, color, name, properties={}) {
+	let geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+	let material = colorMaterials.get(color);
+	let cube = new THREE.Mesh(geometry, material);
+	cube.name = name;
+	cube.position.set(position[0], position[1], position[2]);
+	cube.properties = properties;
+
+	let returnData = {};
+	returnData[name] = cube;
+	return returnData;
+}
 
 export function directionCubes(x=0, y=3, z=0) {
 	let cubes = {};

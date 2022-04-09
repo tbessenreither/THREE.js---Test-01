@@ -17,8 +17,8 @@ class Time {
 	sunDistance = 450;
 	sunSphereDistance = 450;
 	currentSunPosition = this.defaultSunPosition;
-	passedDays = 0;
 	
+	passedTimeInSeconds = 0;
 	timePassing = true;
 
 	globalTimeMultiplicator = 1;
@@ -34,7 +34,8 @@ class Time {
 	currentSunIntensity = 1;
 
 	
-	degreePerHour = Math.round(365 / 24);
+	degreePerHour = Math.round(360 / 24);
+	degreePerSecond = 360 / (24 * 60 * 60);
 
 	constructor(scene) {
 		this.scene = scene;
@@ -44,11 +45,27 @@ class Time {
 
 	_init() {
 		this.checkHour();
-		this.newHourHandler();
 	}
 
-	setTime(hour, day) {
-		this.currentSunPosition = (hour * this.degreePerHour) - 90 % 360;
+	getTimePassed() {
+		return {
+			timeBased: this.currentTimeIncrement,
+			globalTimeMultiplicator: this.globalTimeMultiplicator,
+			timeAcceleration: this.getTimeAcceleration(),
+			secondsPassed: this.passedTimeInSeconds,
+			years: Math.floor(this.passedTimeInSeconds / (365 * 24 * 60 * 60)),
+			days: Math.floor(this.passedTimeInSeconds / (24 * 60 * 60)) % 365,
+			hours: Math.floor((this.passedTimeInSeconds % (24 * 60 * 60)) / (60 * 60)),
+			minutes: Math.floor((this.passedTimeInSeconds % (60 * 60)) / 60),
+			seconds: Math.floor(this.passedTimeInSeconds % 60),
+		};
+	}
+
+	set(day=0, hour=0, minute=0, second=0) {
+		this.passedTimeInSeconds = (hour * 60 * 60) + (day * 24 * 60 * 60) + (minute * 60) + second;
+
+		this.currentSunPosition = hour * this.degreePerHour - 90;
+
 		this.setSunPosition(this.currentSunPosition);
 		if (day !== undefined) this.passedDays = day;
 	}
@@ -88,9 +105,7 @@ class Time {
 	}
 
 	checkHour() {
-		let hour = Math.floor((this.currentSunPosition / this.degreePerHour) + 6.5) ;
-		if (hour >= 24) hour = hour % 24;
-
+		let hour = Math.floor(this.passedTimeInSeconds / (60 * 60)) % 24;
 		if (hour !== this.currentHour) {
 			this.currentHour = hour;
 			this.newHourHandler();
@@ -103,24 +118,32 @@ class Time {
 			if (parseInt(hour) <= this.currentHour) this.currentTimeIncrement = this.timeAcceleration[hour];
 		}
 
-		this.onNewHour.call(this.currentHour, this.passedDays);
+		let timePassed = this.getTimePassed();
+
+		this.onNewHour.call(timePassed);
 		if(this.currentHour === 0) {
 			this.passedDays++;
-			this.onNewDay.call(this.currentHour, this.passedDays);
+			this.onNewDay.call(timePassed);
 		} else if(this.currentHour === 7) {
-			this.onSunrise.call(this.currentHour, this.passedDays);
+			this.onSunrise.call(timePassed);
 		} else if(this.currentHour === 19) {
-			this.onSunset.call(this.currentHour, this.passedDays);
+			this.onSunset.call(timePassed);
 		}
+	}
+
+	getTimeAcceleration() {
+		return this.currentTimeIncrement * this.globalTimeMultiplicator;
 	}
 
 	doTimeTick(delta) {
 		if (this.timePassing === false) return false;
-		let timeIncrement = this.currentTimeIncrement * this.globalTimeMultiplicator;
+		let timeIncrement = this.getTimeAcceleration();
+		let secondsPassed = timeIncrement * delta;
+		this.passedTimeInSeconds += secondsPassed;
 
-		let increment = timeIncrement * delta;
+		let degreeSunChange = secondsPassed * this.degreePerSecond;
 		
-		this.currentSunPosition = (this.currentSunPosition + increment);;
+		this.currentSunPosition = (this.currentSunPosition + degreeSunChange);;
 		if (this.currentSunPosition > 360) {
 			this.currentSunPosition = this.currentSunPosition % 360;
 		}

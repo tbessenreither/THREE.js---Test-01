@@ -10,7 +10,7 @@ export default class Labels {
 
 		this.scene.addEventListener('objectAdded', this.onObjectAdded.bind(this));
 		this.scene.addEventListener('objectRemoved', this.onObjectRemoved.bind(this));
-		this.scene.addEventListener('gameTick', this.tick.bind(this));
+		this.scene.addEventListener('gameTick2', this.tick.bind(this));
 		this.scene.addEventListener('pointingStart', this.pointingStart.bind(this));
 		this.scene.addEventListener('pointingEnd', this.pointingEnd.bind(this));
 	}
@@ -27,10 +27,10 @@ export default class Labels {
 			}
 
 			//if (object.properties.label.text === undefined) object.properties.label.text = "";
-			if (object.properties.label.showCondition === undefined) object.properties.label.showCondition = "pointing";
+			if (object.properties.label.visible === undefined) object.properties.label.visible = "pointing";
 			
 			if (object.properties.label.onTop === undefined) {
-				if (object.properties.label.showCondition === "pointing") {
+				if (object.properties.label.visible === "pointing") {
 					object.properties.label.onTop = true;
 				} else {
 					object.properties.label.onTop = false;
@@ -82,7 +82,7 @@ export default class Labels {
 	pointingStart(object) {
 		if (object.properties.label === false) return;
 
-		if (object.properties.label.showCondition === "pointing") {
+		if (object.properties.label.visible === "pointing") {
 			object.properties.label.object.visible = true;
 		}
 	}
@@ -90,14 +90,14 @@ export default class Labels {
 	pointingEnd(object) {
 		if (object.properties.label === false) return;
 
-		if (object.properties.label.showCondition === "pointing") {
+		if (object.properties.label.visible === "pointing") {
 			object.properties.label.object.visible = false;
 		}
 	}
 
 	tick(delta) {
 		for (let label of Object.values(this.labels)) {
-			//this.updateLabelPosition(label);
+			this.updateLabelPosition(label);
 		}
 	}
 

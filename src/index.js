@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { loadGlbAsync } from "./classes/helpers";
 import Scene from './controller/Scene.js';
 import { colorMaterials } from './helpers/materials.js';
-import { directionCubes } from './helpers/objects.js';
+import { directionCubes, getCube } from './helpers/objects.js';
 
 
 
@@ -12,18 +12,21 @@ import { directionCubes } from './helpers/objects.js';
 let scene = new Scene();
 window.scene = scene;
 
-scene.time.timePassing = false;
-scene.time.setTime(16, 4);
+scene.time.timePassing = true;
+scene.time.set(4, 10);
 scene.gameTick.doGameTick = true;
 scene.doLogging = false;
 
 window.manualTick = false;
 
 
-scene.time.onNewHour.register((hour, day)=>{
-	document.querySelector('#ui .time .day .value').innerHTML = day;
-	document.querySelector('#ui .time .hour .value').innerHTML = hour;
-});
+setInterval(()=>{
+	let time = scene.time.getTimePassed();
+	document.querySelector('#ui .time .year').innerHTML = time.years;
+	document.querySelector('#ui .time .day').innerHTML = time.days;
+	document.querySelector('#ui .time .clock').innerHTML = time.hours.toString().padStart(2, '0')+':'+time.minutes.toString().padStart(2, '0')+':'+time.seconds.toString().padStart(2, '0');
+	document.querySelector('#ui .time .currentAcceleration .value').innerHTML = time.timeBased+' * '+time.globalTimeMultiplicator+' = '+time.timeAcceleration;
+}, 1000);
 
 scene.addEventListener('gameTick10', ()=>{
 	document.querySelector('#ui .pointedObject .value').innerHTML = scene.pointedObject ? scene.pointedObject.name : 'none';
@@ -39,12 +42,22 @@ document.querySelector('#ui .launch').addEventListener('click', ()=>{
 document.querySelector('#ui .tick').addEventListener('click', ()=>{
 	scene.gameTick.performGameTick();
 });
-const spawnButtons = document.querySelectorAll('#ui .spawn');
+document.querySelector('#ui .timeReset').addEventListener('click', ()=>{
+	scene.time.set();
+});
 
+const spawnButtons = document.querySelectorAll('#ui .spawn');
 for (let spawnButton of spawnButtons) {
 	spawnButton.addEventListener('click', (e)=>{
 		let cubeCount = parseInt(e.target.value);
 		spawnCubes(cubeCount)
+	});
+}
+const timeButtons = document.querySelectorAll('#ui .timeAcceleration');
+for (let timeButton of timeButtons) {
+	timeButton.addEventListener('click', (e)=>{
+		let acceleration = parseInt(e.target.value);
+		scene.time.globalTimeMultiplicator = acceleration;
 	});
 }
 
@@ -58,7 +71,27 @@ for (let spawnButton of spawnButtons) {
 })();
 
 
+scene.time.globalTimeMultiplicator = 10;
+//oscilating cube
+scene.add(getCube([2,2,2], [0, 1, -10], 'white', 'oscilatingCube', {
+	colidable: true,
+	label: {
+		text: 'timecube',
+		visible: 'always',
+		onTop: true,
+	},
+}));
+let oscilatingCube = scene.objects.get('oscilatingCube');
+oscilatingCube.castShadow = true;
+oscilatingCube.receiveShadow = true;
 
+scene.addEventListener('gameTick2', ()=>{
+	let downscale = scene.time.passedTimeInSeconds / 60;
+	oscilatingCube.position.y = Math.sin(downscale * Math.PI) * 2 + 3;
+	oscilatingCube.position.x = Math.cos(downscale * Math.PI) * 2;
+});
+
+//direction cubes
 scene.add(directionCubes(5, 5, 0));
 
 
@@ -86,9 +119,12 @@ function spawnCubes(cubeCount) {
 			onPointStart: ()=> {
 				console.log('onPointStart', this.name);
 			},
+			label: {
+				text: 'cube_'+i,
+				visible: 'pointing',
+			},
 			movable: true,
 			colidable: true,
-			showProjection: true,
 		};
 	
 		cubes[`cube_${i}`] = cube;

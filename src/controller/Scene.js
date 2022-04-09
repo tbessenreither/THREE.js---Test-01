@@ -142,7 +142,7 @@ class Scene {
 		let pointableFound = null;
 		for (let intersection of intersects) {
 			try {
-				if (intersection.object.properties.pointable === true) {
+				if (intersection.object.properties?.pointable === true) {
 					pointableFound = intersection.object;
 					break;
 				}
