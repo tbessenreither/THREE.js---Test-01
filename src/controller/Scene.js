@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 import { OrbitControls } from '../jsm/controls/OrbitControls.js';
 
-import PhysicsObject from '../classes/PhysicsObject.js';
 import Subscribers from '../classes/Subscribers.ts';
 import ObjectStorage from '../classes/ObjectStorage.ts';
 
-import Time from './Time.js';
-import Sky from './Sky.js';
+import Time from './Time';
+import Sky from './Sky';
 import GameTick from './Gametick';
+import Physics from './Physics';
 
 class Scene {
+	doLogging = false;
 	eventListeners = {};
-	objects = new ObjectStorage();
+	objects = new ObjectStorage(this);
 
 
 	scene = new THREE.Scene();
@@ -23,7 +24,12 @@ class Scene {
 	gameTick = null;
 	time = null;
 	sky = null;
+	physics = null;
 
+	//raycaster thing
+	raycaster = new THREE.Raycaster();
+	pointer = new THREE.Vector2();
+	pointedObject = null;
 
 	constructor() {
 		this.startRender = this.startRender.bind(this);
@@ -31,6 +37,7 @@ class Scene {
 		this.addEventListener = this.addEventListener.bind(this);
 		this.removeEventListener = this.removeEventListener.bind(this);
 		this.triggerEvent = this.triggerEvent.bind(this);
+		this.onPointerMove = this.onPointerMove.bind(this);
 
 
 		this.gameTick = new GameTick(this);
@@ -38,10 +45,10 @@ class Scene {
 		this.sky = new Sky(this, {
 			skyboxDiameter: 1000,
 		});
+		this.physics = new Physics(this);
 
 		this._init();
 
-		this.triggerEvent('onInit');
 	}
 
 	addEventListener(event, callback) {
@@ -82,7 +89,9 @@ class Scene {
 
 		this.onWindowResize();
 		document.getElementById('stage').appendChild( this.renderer.domElement );
-		window.addEventListener( 'resize', this.onWindowResize )
+		window.addEventListener( 'resize', this.onWindowResize.bind(this) )
+		window.addEventListener( 'pointermove', this.onPointerMove.bind(this) );
+		window.addEventListener( 'click', this.onClick.bind(this) );
 
 		
 		
@@ -97,6 +106,8 @@ class Scene {
 		this.camera.position.z = 20;
 
 		this.animate = this.animate.bind(this);
+
+		this.triggerEvent('onInit');
 	}
 
 	onWindowResize() {
@@ -108,13 +119,54 @@ class Scene {
 		this.camera.updateProjectionMatrix();
 
 		this.renderer.setSize( width, height );
+	}
 
+
+	onPointerMove(event) {
+		this.pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		this.pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+	}
+
+	onClick(event){
+		if (this.pointedObject === null) return null;
+
+		if (this.pointedObject.properties.clickable !== false) this.pointedObject.properties.clickable(event);
+
+		return this.pointedObject;
+	}
+
+	updateRaycaster() {
+		this.raycaster.setFromCamera( this.pointer, this.camera );
+
+		const intersects = this.raycaster.intersectObjects( this.scene.children );
+		
+		let pointableFound = false;
+		for (let intersection of intersects) {
+			try {
+				if (intersection.object.properties?.clickable && intersection.object.properties.clickable !== false) {
+					this.pointedObject = intersection.object;
+					pointableFound = true;
+					break;
+				}
+			} catch (e) {
+				console.error('intersecter error', e);
+			}
+		}
+		if (!pointableFound) {
+			this.pointedObject = null;
+		}
 	}
 
 	startRender() {
 		this.triggerEvent('onStartRender');
 		this.objects.call('onStartRender');
 		this.animate();
+	}
+
+	addOne(key, object) {
+		let objects = {};
+		objects[key] = object;
+		this.add(objects);
 	}
 
 	add(objects) {
@@ -142,7 +194,9 @@ class Scene {
 	animate() {
 		requestAnimationFrame( this.animate );
 
-		this.gameTick.doGameTick();
+		this.updateRaycaster();
+
+		this.gameTick.onGameTick();
 
 		this.renderer.render( this.scene, this.camera );
 	}
@@ -151,9 +205,10 @@ class Scene {
 	addPlane() {
 		const planeGeometry = new THREE.PlaneGeometry( this.sky.options.skyboxDiameter, this.sky.options.skyboxDiameter, Math.round(this.sky.options.skyboxDiameter / 200), Math.round(this.sky.options.skyboxDiameter / 200) );
 		const planeMaterial = new THREE.MeshStandardMaterial( {color: 0x00ff00, side: THREE.DoubleSide} );
-		const plane = new PhysicsObject( planeGeometry, planeMaterial );
-		plane.calculateGravity = false;
-		plane.movable = false;
+		const plane = new THREE.Mesh( planeGeometry, planeMaterial );
+		plane.properties = {
+			colidable: true,
+		};
 		plane.rotation.x = Math.PI / 2;
 
 		plane.receiveShadow = true;

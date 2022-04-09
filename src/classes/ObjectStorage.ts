@@ -1,14 +1,14 @@
 
 class ObjectStorage {
-	objects = {};
-	physicsObjects = {};
-	physicsObjectsArray = [];
+	scene = null;
 
-	constructor() {
-	}
+	objectKeyLookup = {};
+	objects = [];
 
-	_physicsObjectsUpdated() {
-		 this.physicsObjectsArray = Object.values(this.physicsObjects);
+	objectCounter = 0;
+
+	constructor(scene) {
+		this.scene = scene;
 	}
 
 	registerObjects(objects) {
@@ -17,52 +17,49 @@ class ObjectStorage {
 		}
 	}
 
-	register(key, object) {
-		this.objects[key] = object;
+	initObject(key, object) {
+		const uniqueObjectId = this.objectCounter++;
 
-		if (object.constructor.name === "PhysicsObject") {
-			object._isPhysicsObject = true;
-			this.physicsObjects[key] = object;
-			this._physicsObjectsUpdated();
+		if (object.properties === undefined) object.properties = {};
+		object.properties.id = uniqueObjectId;
+		object.properties.key = key;
+		if (object.name === "") object.name = key;
+		if (object.properties.clickable === undefined) {
+			object.properties.clickable = false;
+		} else {
+			object.properties.clickable = object.properties.clickable.bind(object);
 		}
 
-		object.key = key;
+		return uniqueObjectId;
+	}
 
+	register(key, object) {
+		const uniqueObjectId = this.initObject(key, object);
+		
+		this.objects[uniqueObjectId] = object;
+		this.objectKeyLookup[key] = uniqueObjectId;
+		
+		this.scene.triggerEvent('objectAdded', object);
 		return object;
 	}
 
 	unregister(key) {
-		if (this.objects[key] === undefined) return true;
+		const objectId = this.objectKeyLookup[key];
+		
+		this.scene.triggerEvent('objectRemoved', this.objects[objectId]);
 
-		if (this.objects[key]._isPhysicsObject) {
-			delete this.physicsObjects[key];
-			this._physicsObjectsUpdated();
-		}
-		delete this.objects[key];
+		delete this.objects[objectId];
+		delete this.objectKeyLookup[key];
 	}
 
 	get(key) {
-		if (this.objects[key] !== undefined) {
-			return this.objects[key];
-		} else {
-			return null;
-		}
+		return this.objects[this.objectKeyLookup[key]] || null;
 	}
 
 	call(method, ...args) {
-		for (let key in this.objects) {
-			if (this.objects[key][method] !== undefined) {
-				this.objects[key][method](...args);
-			}
+		for (let object of this.objects) {
+			if (object[method] !== undefined) object[method](...args);
 		}
-	}
-	
-	getPhysicsObjects() {
-		return this.physicsObjects;
-	}
-	
-	getPhysicsObjectsAsArray() {
-		return this.physicsObjectsArray;
 	}
 }
 

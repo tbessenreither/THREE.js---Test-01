@@ -3,71 +3,103 @@ import * as THREE from 'three';
 import Subscribers from '../classes/Subscribers.ts';
 
 class GameTick {
+	targetFps = 60;
+	targetFrameTime = Math.round(1000 / this.targetFps);
+	doGameTick = true;
+
 	scene = null;
 
 	currentGameTick = 0;
-	onGameTick = new Subscribers();
-	onGameTickDivider = {
-		1: this.onGameTick,
-		2: new Subscribers(),
-		5: new Subscribers(),
-		10: new Subscribers(),
-		20: new Subscribers(),
-		50: new Subscribers(),
-		100: new Subscribers(),
-	};
 	onGameTickDividerClocks = {};
 	internalOnGameTickSubscriberId = null;
 
+	longestGameTick = 0;
+	statistics = {};
 
 	constructor(scene, options) {
 		this.scene = scene;
 
+		this.onGameTick = this.onGameTick.bind(this);
+
 		this._init();
 	}
 
-	_init() {
-		for (let key of Object.keys(this.onGameTickDivider)) {
+	_init() { 
+		for (let key of [1, 2, 5, 10, 20, 50, 100]) {
 			this.onGameTickDividerClocks[key] = new THREE.Clock();
 		}
+
+		setInterval(()=>{
+			this.analyticsTick();
+		}, 1000);
+	}
+
+	logStatistic(name, value) {
+		if (!this.scene.doLogging) return;
+
+		if (value === undefined) value = 1;
+		if (this.statistics[name] === undefined) {
+			this.statistics[name] = 0;
+		}
+		this.statistics[name] += value;
+	}
+
+	analyticsTick() {
+		if (!this.scene.doLogging) return;
+
+		if (this.targetFrameTime < this.longestGameTick) {
+			console.log('GameTick took ' + this.longestGameTick + 'ms, but should have taken ' + this.targetFrameTime + 'ms');
+		}
+
+		this.statistics.longestGameTick = this.longestGameTick;
+
+		if (Object.keys(this.statistics).length > 0) console.table(this.statistics);
+
+		this.longestGameTick = 0;
+		this.statistics = {};
 	}
 
 	getFrameTimePercentageForClock(key) {
 		return this.onGameTickDividerClocks[key].getDelta() / 1; //this is based on secons not on frame time.
 	}
 
-	doGameTick() {
-		const delta1 = this.getFrameTimePercentageForClock(1);
-		this.scene.objects.call('onPreGameTick');
-		this.scene.objects.call('onGameTick', delta1);
-		this.scene.objects.call('onCalculateVelocity', delta1);
-		this.scene.objects.call('onCalculateCollisions', delta1);
-		this.scene.objects.call('onCalculatePosition', delta1);
+	onGameTick() {
+		if (!this.doGameTick) return false;
 
-		this.onGameTickDivider[1].call(delta1);
+		this.performGameTick();
+	}
+
+	performGameTick() {
+		const tickStart = new Date().getTime();
+		const delta1 = this.getFrameTimePercentageForClock(1);
+
+		this.scene.triggerEvent('gameTick', delta1);
 		if (this.currentGameTick % 2 === 0) {
-			this.onGameTickDivider[2].call(this.getFrameTimePercentageForClock(2));
+			this.scene.triggerEvent('gameTick2', this.getFrameTimePercentageForClock(2));
 		}
 		if (this.currentGameTick % 5 === 0) {
-			this.onGameTickDivider[5].call(this.getFrameTimePercentageForClock(5));
+			this.scene.triggerEvent('gameTick5', this.getFrameTimePercentageForClock(5));
 		}
 		if (this.currentGameTick % 10 === 0) {
-			this.onGameTickDivider[10].call(this.getFrameTimePercentageForClock(10));
+			this.scene.triggerEvent('gameTick10', this.getFrameTimePercentageForClock(10));
 		}
 		if (this.currentGameTick % 20 === 0) {
-			this.onGameTickDivider[20].call(this.getFrameTimePercentageForClock(20));
+			this.scene.triggerEvent('gameTick20', this.getFrameTimePercentageForClock(20));
 		}
 		if (this.currentGameTick % 50 === 0) {
-			this.onGameTickDivider[50].call(this.getFrameTimePercentageForClock(50));
+			this.scene.triggerEvent('gameTick50', this.getFrameTimePercentageForClock(50));
 		}
 		if (this.currentGameTick % 100 === 0) {
-			this.onGameTickDivider[100].call(this.getFrameTimePercentageForClock(100));
+			this.scene.triggerEvent('gameTick100', this.getFrameTimePercentageForClock(100));
 		}
 
 		this.currentGameTick++;
 		if(this.currentGameTick >= 10000) {
 			this.currentGameTick = 0;
 		}
+
+		const tickDuration = new Date().getTime() - tickStart;
+		if (tickDuration > this.longestGameTick) this.longestGameTick = tickDuration;
 	}
 }
 

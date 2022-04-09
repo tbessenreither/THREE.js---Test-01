@@ -82,9 +82,9 @@ class Time {
 		
 		this.setSunPosition(this.defaultSunPosition);
 
-		this.scene.gameTick.onGameTickDivider[2].register(this.doTimeTick.bind(this));
-		this.scene.gameTick.onGameTickDivider[10].register(this.calculateSunIntensity.bind(this));
-		this.scene.gameTick.onGameTickDivider[20].register(this.checkHour.bind(this));
+		this.scene.addEventListener('gameTick2', this.doTimeTick.bind(this));
+		this.scene.addEventListener('gameTick10', this.calculateSunIntensity.bind(this));
+		this.scene.addEventListener('gameTick20', this.checkHour.bind(this));
 	}
 
 	checkHour() {

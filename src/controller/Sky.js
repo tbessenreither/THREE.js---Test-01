@@ -21,8 +21,7 @@ class Sky {
 	}
 
 	_init() {
-		
-		this.scene.gameTick.onGameTickDivider[10].register(this.calculateSkyboxOpacity.bind(this));
+		this.scene.addEventListener('gameTick10', this.calculateSkyboxOpacity.bind(this));
 	}
 
 	calculateSkyboxOpacity() {

@@ -7,18 +7,28 @@ export default class PhysicsObject extends THREE.Mesh {
 
 	movable = true;
 	calculateGravity = true;
-	gravity = 0.0981;
-	minimumVelocity = 0.0015;
+	maxItterations = 10;
 
-	damping = 0.05;
+	pointable = true;
+
+	gravity = 0.981;
+	minimumVelocity = 0.011;
+	wiggle = 0.1;
+	damping = 0.9;
+
 	density = 1;
-	weight = 1;
+	weight = null;
 
 	velocity = new THREE.Vector3(0, 0, 0);
 
+	showProjection = false;
 	scene = null;
 
+	// flags to be cleared bevor next tick
 	calculatedColissions = {};
+	tickImmovable = false;
+
+	projectedCube = null;
 
 	constructor(...args) {
 		super(...args);
@@ -39,89 +49,142 @@ export default class PhysicsObject extends THREE.Mesh {
 		}
 	}
 
+	isMovable() {
+		return this.movable && !this.tickImmovable;
+	}
+
+	handleClick(e) {
+		if (this.onClick) {
+			this.onClick(e);
+		}
+	}
+
 	onAdd(scene) {
 		this.scene = scene;
+
+		if (this.showProjection) {
+			const cubeGeometry = new THREE.BoxGeometry();
+			const cubeMaterial = new THREE.MeshStandardMaterial( { color: 0xff0000, transparent: true, opacity: 0.3 } );
+	
+			this.projectedCube = new THREE.Mesh( cubeGeometry, cubeMaterial );
+			this.projectedCube.position.copy(this.position);
+			let object = {};
+			object[this.key+'_projection'] = this.projectedCube;
+			this.scene.add(object);
+		}
 	}
 
 	onRemove() {
 		console.log('im gone now');
 	}
 
-	onPreGameTick() {
-		this.calculatedColissions = {};
-	}
-
-	onGameTick(delta) {
-		
-	}
-
-	onCalculateVelocity(delta) {
-		if (this.calculateGravity) {
-			this.velocity = this.velocity.add(new THREE.Vector3(0, -this.gravity * delta, 0));
-
-			if (Math.abs(this.velocity.y) < this.minimumVelocity) this.velocity.y = 0;
-			if (Math.abs(this.velocity.x) < this.minimumVelocity) this.velocity.x = 0;
-			if (Math.abs(this.velocity.z) < this.minimumVelocity) this.velocity.z = 0;
-		}
-	}
-
 	addVelocity(vector) {
-		if (!this.movable) return false;
-
-		if (vector.length() < 0.001) return false;
+		if (!this.isMovable()) return false;
 		
 		this.velocity = this.velocity.add(vector);
 		return true;
 	}
 
-	// calculate collisions with other objects in scene.objects.getPhysicsObjects()
-	onCalculateCollisions(delta) {
-		const physicsObjects = this.scene?.objects.getPhysicsObjectsAsArray();
-		if (!physicsObjects) return;
+	getProjectedPosition() {
+		return new THREE.Vector3(this.position.x, this.position.y, this.position.z).add(this.velocity);
+	}
 
-		for (let physicsObject of physicsObjects) {
-			if (physicsObject.key === this.key) continue;
-			if (this.calculatedColissions[physicsObject.key]) continue;
-
-
-			const boundingBoxPosition = new THREE.Box3().setFromObject(this);
-			const boundingBoxPosition2 = new THREE.Box3().setFromObject(physicsObject);
-
-			boundingBoxPosition.translate(this.velocity);
-			boundingBoxPosition2.translate(physicsObject.velocity);
-
-			if (boundingBoxPosition.intersectsBox(boundingBoxPosition2)) {
-
-				const collisionVector = this.velocity.clone().sub(physicsObject.velocity);
-				const totalDamping = this.damping * physicsObject.damping;
-
-				const myWeightRatio = this.weight / (this.weight + physicsObject.weight);
-				const otherWeightRatio = 1 - myWeightRatio;
-
-				this.velocity.y = 0;
-				this.velocity.x = 0;
-				this.velocity.z = 0;
-				physicsObject.velocity.y = 0;
-				physicsObject.velocity.x = 0;
-				physicsObject.velocity.z = 0;
-				
-				this.addVelocity(collisionVector.clone().multiplyScalar(myWeightRatio * totalDamping));
-				physicsObject.addVelocity(collisionVector.clone().multiplyScalar(otherWeightRatio * totalDamping));
-			}
-
-			// mark calculations as done
-			this.calculatedColissions[physicsObject.key] = true;
-			physicsObject.calculatedColissions[this.key] = true;
+	updateProjection() {
+		if (this.showProjection) {
+			const projectedPosition = this.getProjectedPosition();
+			this.projectedCube.position.set(projectedPosition.x, projectedPosition.y, projectedPosition.z);
 		}
 	}
 
-	onCalculatePosition(delta) {
-		if (this.movable === false) {
+	onPreGameTick() {
+		this.calculatedColissions = {};
+		this.tickImmovable = false;
+	}
+
+	onCalculateVelocity(delta) {
+		delta = 0.05;
+		if (this.calculateGravity) {
+			this.addVelocity(new THREE.Vector3(0, -this.gravity * delta, 0));
+		}
+	}
+
+	onCalculateCollisions() {
+		const THREE.Meshs = this.scene?.objects.getTHREE.MeshsAsArray();
+		if (!THREE.Meshs) return;
+
+		for (let collisionObject of THREE.Meshs) {
+			if (collisionObject.key === this.key) continue;
+			if (this.calculatedColissions[collisionObject.key]) {
+				this.scene.gameTick.logStatistic('skipped collision done');
+				continue;
+			}
+			if (!this.movable && !collisionObject.movable) {
+				this.scene.gameTick.logStatistic('skipped collision immovable');
+				continue;
+			}
+			this.scene.gameTick.logStatistic('collision calculation');
+
+			var projectedBoundingBoxPosition = new THREE.Box3().setFromObject(this).translate(this.velocity);
+			var projectedBoundingBoxPosition2 = new THREE.Box3().setFromObject(collisionObject).translate(collisionObject.velocity);
+
+			if (projectedBoundingBoxPosition.intersectsBox(projectedBoundingBoxPosition2)) {
+				this.handleCollision(collisionObject);
+			}
+				
+				
+				/*
+				if (this.movable || collisionObject.movable) {
+					projectedBoundingBoxPosition = new THREE.Box3().setFromObject(this).translate(this.velocity);
+					projectedBoundingBoxPosition2 = new THREE.Box3().setFromObject(collisionObject).translate(collisionObject.velocity);
+					if (projectedBoundingBoxPosition.intersectsBox(projectedBoundingBoxPosition2)) {
+						this.pushObjectsAwayFromEachOther(collisionObject);
+					}
+				}/** */
+
+			// mark calculations as done
+			this.calculatedColissions[collisionObject.key] = true;
+			collisionObject.calculatedColissions[this.key] = true;
+		}
+	}
+
+	handleCollision(collisionObject) {
+		const totalDamping = this.damping * collisionObject.damping;
+
+		const myVelocity = this.velocity.clone();
+		const otherVelocity = collisionObject.velocity.clone();
+		
+		this.addVelocity(otherVelocity.multiplyScalar(totalDamping * -1));
+		collisionObject.addVelocity(myVelocity.multiplyScalar(totalDamping * -1));
+	}
+
+	pushObjectsAwayFromEachOther(collisionObject) {
+		const distance = this.position.distanceTo(collisionObject.position);
+		const direction = this.position.clone().sub(collisionObject.position);
+		direction.normalize();
+
+		this.addVelocity(distance * direction);
+		collisionObject.addVelocity(distance * direction.multiplyScalar(-1));
+	}
+
+	onCalculatePosition() {
+		this.handleMovement();
+	}
+
+	handleMovement() {
+		
+		if (!this.isMovable()) {
 			this.velocity.set(0, 0, 0);
 			return;
-		};
+		}/** */
 
+		
+		if (Math.abs(this.velocity.y) < this.minimumVelocity) this.velocity.y = 0;
+		if (Math.abs(this.velocity.x) < this.minimumVelocity) this.velocity.x = 0;
+		if (Math.abs(this.velocity.z) < this.minimumVelocity) this.velocity.z = 0;
+		this.scene.gameTick.logStatistic('movement');
 		this.position.add(this.velocity);
+
+		this.updateProjection();
 	}
 
 }
