@@ -1,4 +1,4 @@
-import TextSprite from '@seregpie/three.text-sprite';
+import spriteGenerator from '../classes/SpriteGenerator';
 
 export default class Labels {
 	scene = null;
@@ -49,6 +49,7 @@ export default class Labels {
 
 		if (object.properties.label === false) return;
 
+		/*
 		const sprite = new TextSprite({
 			alignment: 'center',
 			color: 'black',
@@ -56,7 +57,10 @@ export default class Labels {
 			backgroundColor: 'rgba(255,255,255,0.5)',
 			fontSize: object.properties.label.fontSize,
 			text: object.properties.label.text,
-		});
+		});/** */
+
+
+		const sprite = spriteGenerator.fromText(object.properties.label.text);
 		object.properties.label.object = sprite;
 		object.properties.label.parent = object;
 
@@ -103,7 +107,7 @@ export default class Labels {
 
 	updateLabelPosition(label) {
 		label.object.position.copy(label.parent.position);
-		label.object.position.y += label.parent.geometry.boundingBox.max.y + label.fontSize + 0.1;
+		label.object.position.y += label.parent.geometry.boundingBox.max.y;
 	}
 
 

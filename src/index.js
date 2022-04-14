@@ -114,7 +114,7 @@ function spawnCubes(cubeCount) {
 		cube.properties = {
 			clickable: function() {
 				console.log(this);
-				this.addVelocity(new THREE.Vector3(0, 1, 0));
+				this.addVelocity(new THREE.Vector3(0, 0.5, 0));
 			},
 			onPointStart: ()=> {
 				console.log('onPointStart', this.name);
